@@ -47,6 +47,38 @@ app.get("/", async function (req, res, next) {
   res.send("Done");
 });
 
+app.get("/massgathering", async function (req, res, next) {
+  const uid = req.query.uid;
+  let expoToken = "";
+  let snapshotUsers = await firebase.database().ref(`users`).once("value");
+  let snapshotUser = await firebase
+    .database()
+    .ref(`users/${uid}`)
+    .once("value");
+  snapshotUser = snapshotUser.val();
+  snapshotUsers = snapshotUsers.val();
+  for (oldUseruid in snapshotUsers) {
+    if (snapshotUsers[oldUseruid].coords.latitude) {
+      let dist = geolib.getDistance(
+        snapshotUsers[oldUseruid].coords,
+        snapshotUser.coords
+      );
+      console.log(snapshotUsers[oldUseruid].email);
+      console.log(dist);
+      if (dist <= 10000 && dist != 0) {
+        sendNotification(snapshotUsers[oldUseruid].expoPushToken);
+      }
+    }
+  }
+  res.send("Done");
+});
+
+app.get("/authorities", async function (req, res, next) {
+  const uid = req.query.uid;
+  sendNotification(uid);
+  res.send("Done");
+});
+
 const sendNotification = async (expoToken) => {
   try {
     if (expoToken) {
